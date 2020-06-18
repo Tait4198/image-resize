@@ -1,0 +1,11 @@
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+/build/
+/dist/
+/out/
+*.exe
+*.dll
+*.o
