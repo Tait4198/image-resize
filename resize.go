@@ -9,15 +9,18 @@ import "C"
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 	"unsafe"
 )
 
 type ResizeFile struct {
 	SrcPath  string
 	SavePath string
+	Index    int
 }
 
 func (rs ResizeSize) String() string {
@@ -71,13 +74,14 @@ func Resize(srcPath, savePath, inFormat, outFormat string, size ResizeSize, dept
 	taskChan := make(chan ResizeFile, gs)
 	exitChan := make(chan bool, gs)
 	go func() {
-		for _, rf := range resizeFiles {
+		for i, rf := range resizeFiles {
+			rf.Index = i
 			taskChan <- rf
 		}
 		close(taskChan)
 	}()
 	for i := 0; i < gs; i++ {
-		go ResizeTask(taskChan, exitChan, size)
+		go ResizeTask(taskChan, exitChan, size, len(resizeFiles))
 	}
 	for i := 0; i < gs; i++ {
 		<-exitChan
@@ -86,32 +90,34 @@ func Resize(srcPath, savePath, inFormat, outFormat string, size ResizeSize, dept
 	return nil
 }
 
-func ResizeTask(taskChan chan ResizeFile, exitChan chan bool, size ResizeSize) {
+func ResizeTask(taskChan chan ResizeFile, exitChan chan bool, size ResizeSize, count int) {
 	defer func() {
-		err := recover()
-		if err != nil {
-			fmt.Printf("task err %s\n", err)
+		if err := recover(); err != nil {
+			log.Printf("处理异常 %s\n", err)
 			return
 		}
 	}()
-
 	for task := range taskChan {
-		fmt.Println(task.SrcPath, task.SavePath)
+		t1 := time.Now()
 		ResizeImage(task, size)
+		t2 := time.Since(t1)
+		log.Printf("[%d/%d] %s -> %s\t耗时 %s", task.Index+1, count, task.SrcPath, task.SavePath, t2)
 	}
 	exitChan <- true
 }
 
-func ResizeImage(rf ResizeFile, rs ResizeSize) {
+func ResizeImage(rf ResizeFile, rs ResizeSize) int {
 	src := C.CString(rf.SrcPath)
 	save := C.CString(rf.SavePath)
+	result := -1
 	if rs.Percentage == 0 {
-		_ = C.scaleSize(src, save, C.int(rs.Width), C.int(rs.Height))
+		result = int(C.scaleSize(src, save, C.int(rs.Width), C.int(rs.Height)))
 	} else {
-		_ = C.scalePercentage(src, save, C.double(rs.Percentage))
+		result = int(C.scalePercentage(src, save, C.double(rs.Percentage)))
 	}
 	defer C.free(unsafe.Pointer(src))
 	defer C.free(unsafe.Pointer(save))
+	return result
 }
 
 func MkDirs(path string) error {

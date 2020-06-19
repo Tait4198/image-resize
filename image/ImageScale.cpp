@@ -22,10 +22,10 @@ int ImageScale::scale(char *srcPath, char *savePath, int width, int height)
     Size saveSize(width, height);
     Mat save;
     resize(src, save, saveSize, interpolation);
-    imwrite(gbkSavePath, save);
+    int result = imwrite(gbkSavePath, save) ? 0 : -1;
     src.release();
     save.release();
-    return 0;
+    return result;
 }
 
 int ImageScale::scale(char *srcPath, char *savePath, double percentage)
@@ -49,10 +49,10 @@ int ImageScale::scale(char *srcPath, char *savePath, double percentage)
     Size saveSize(width, height);
     Mat save;
     resize(src, save, saveSize, interpolation);
-    imwrite(gbkSavePath, save);
+    int result = imwrite(gbkSavePath, save) ? 0 : -1;
     src.release();
     save.release();
-    return 0;
+    return result;
 }
 
 char *ImageScale::utf8toGbk(const char *str)
