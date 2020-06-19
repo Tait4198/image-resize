@@ -152,7 +152,7 @@ func GetResizeFiles(srcPath, savePath, subPath string, curDepth, maxDepth int,
 						continue
 					}
 					subFiles, err := GetResizeFiles(subSrcPath, savePath,
-						subPath+file.Name(), curDepth+1, maxDepth, rff, fnc)
+						fmt.Sprintf("%s\\%s", subPath, file.Name()), curDepth+1, maxDepth, rff, fnc)
 					if err == nil {
 						filePaths = append(filePaths, subFiles...)
 					} else {
@@ -173,7 +173,8 @@ func GetResizeFiles(srcPath, savePath, subPath string, curDepth, maxDepth int,
 					} else {
 						saveDirPath = fmt.Sprintf("%s\\%s", srcPath, saveFileName)
 					}
-					filePaths = append(filePaths, ResizeFile{SrcPath: subSrcPath, SavePath: saveDirPath})
+					filePaths = append(filePaths,
+						ResizeFile{SrcPath: replaceDoubleSlash(subSrcPath), SavePath: replaceDoubleSlash(saveDirPath)})
 				}
 			}
 		}
@@ -191,7 +192,12 @@ func GetResizeFiles(srcPath, savePath, subPath string, curDepth, maxDepth int,
 			saveDirPath = fmt.Sprintf("%s\\%s", srcDirPath, saveFileName)
 		}
 
-		filePaths = append(filePaths, ResizeFile{SrcPath: srcPath, SavePath: saveDirPath})
+		filePaths = append(filePaths,
+			ResizeFile{SrcPath: replaceDoubleSlash(srcPath), SavePath: replaceDoubleSlash(saveDirPath)})
 	}
 	return filePaths, nil
+}
+
+func replaceDoubleSlash(str string) string {
+	return strings.ReplaceAll(str, "\\\\", "\\")
 }
